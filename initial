@@ -1,0 +1,132 @@
+function myFunction() {
+
+  
+  // (1) Request signed token
+  
+  var apiUrl_auth = 'https://api.ilovepdf.com/v1/auth'
+  
+  var data_auth =  {
+            public_key: 'project_public_1d37bccc354a0aca10ac922681c553fa_EoM0B092af26d8a267c32697c38e5e0a3c039'
+        }
+   
+  var options_auth = {
+    'method' : 'POST',
+    'payload' : data_auth,
+    'muteHttpExceptions' : true,
+  }
+  
+  var response_auth = UrlFetchApp.fetch(apiUrl_auth, options_auth)
+  
+  var longtoken = response_auth.getContentText()
+  
+  Logger.log(longtoken)
+  Logger.log('STEP 1, Authentication and token collection complete')
+  
+  var token = longtoken.substring(10)
+  
+  
+  // (2) Retrieve the information of which server will be our assigned server and what Task ID we need to use
+
+  var apiUrl_start = 'https://api.ilovepdf.com/v1/start/pdfjpg'
+  
+  var header = {'Authorization': 'Bearer ' + token}
+  
+  var options_start = {
+    'method' : 'GET',
+    'headers' : header,
+    'muteHttpExceptions' : true,
+  }
+  
+  var response_start = UrlFetchApp.fetch(apiUrl_start, options_start)
+  
+  var response_start_text = response_start.getContentText()
+  
+  Logger.log(response_start_text)
+  Logger.log('STEP 2, Server and TASKID retrival complete')
+  
+  var server = response_start_text.substring(11,28)
+  
+  var taskID = response_start_text.substring(38,192)
+  
+
+  // (3) Upload the files
+  
+  var apiUrl_upload = 'https://' + server + '/v1/upload'
+
+  var DRIVE_PDF_FILE = DriveApp.getFilesByName('MetJetBrief_RNZNAVY_20181204180511.pdf') //*CHANGE THIS CODE TO REFLECT AUTO NAME COLLECTIOn
+  var DRIVE_PDF_NAME = 'MetJetBrief_RNZNAVY_20181204180511.pdf' //**CHANGE THIS CODE TO REFLECT AUTO NAME COLLECTION
+  
+  var payload_upload =  {
+    task: taskID,
+    file: DRIVE_PDF_FILE.next().getAs(MimeType.PDF),
+        }
+  
+  var options_upload = {
+    'method' : 'POST',
+    'headers' : header,
+    'payload' : payload_upload,
+    'muteHttpExceptions' : true,
+  }
+  
+  var response_upload = UrlFetchApp.fetch(apiUrl_upload, options_upload)
+  
+  var response_upload_text = response_upload.getContentText()
+  
+  Logger.log(response_upload_text)
+  Logger.log('STEP 3, Uploading complete')
+
+  var server_file_name = response_upload_text.substring(19, 88)
+
+  
+  
+  // (4) Process the files
+  
+  var apiUrl_process = 'https://' + server + '/v1/process'
+    
+  var processing_files = {
+    '[server_filename]' : server_file_name,
+    '[filename]' : DRIVE_PDF_NAME, 
+  }
+  
+  var payload_process =  {
+    task : taskID,
+    tool : 'pdfjpg',
+    files : processing_files,
+   }
+  
+  var options_process = {
+    'method' : 'POST',
+    'headers' : header,
+    'payload' : payload_process,
+    'muteHttpExceptions' : true,
+  }
+  
+  var response_process = UrlFetchApp.fetch(apiUrl_process, options_process)
+  
+  var response_process_text = response_process.getContentText()
+  
+  Logger.log(response_process_text)
+  Logger.log('STEP 4, Processing complete')
+  
+  
+    // (XX) Get info about the uploaded file
+  
+  var apiUrl_info = 'https://' + server + '/v1/task/' + taskID
+
+  var options_info = {
+    'method' : 'GET',
+    'headers' : header,
+    'muteHttpExceptions' : true,
+  }
+  
+  var response_info = UrlFetchApp.fetch(apiUrl_info, options_info)
+  
+  var response_info_text = response_info.getContentText()
+  
+  Logger.log(response_info_text)
+  Logger.log('info collected')
+  
+  
+  
+  
+}
